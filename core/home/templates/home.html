@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+
+{% block title %}check-stock.com{% endblock %}
+
+{% block content %}
+<div class="container-fluid bg-light py-2" style="height: 650px;">
+    {% if not user.is_authenticated %}
+    <div class="row justify-content-center align-items-center">
+        <div class="col-md-6 col-lg-4">
+            <div class="card shadow">
+                <div class="card-body text-center p-5">
+                    <h2 class="mb-4 fw-bold">Login</h2>
+                    {% load socialaccount %}
+                    <a href="{% provider_login_url 'google' next='/' %}" class="btn btn-danger btn-lg">
+                        <i class="fab fa-google"></i> Login with Google
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="row h-100" style="overflow-y: auto;">
+        <div class="col-12 col-lg-8 mx-auto d-flex flex-column">
+            <div class="bg-white p-2 rounded-top border">
+                <strong class="text-dark">Logged in as {{user.username}}</strong>
+            </div>
+
+            <div class="flex-grow-1 bg-white border-start border-end" id="chat-messages" style="height:auto">
+                <!-- Messages will be rendered here -->
+            </div>
+
+            <div class="bg-white p-3 rounded-bottom border">
+                <div class="row g-2">
+                    <div class="col position-relative">
+                        <textarea id="user-input" class="form-control" placeholder="Ask something..."
+                            style="max-height: 200px; overflow-x: hidden; resize: none;" oninput="autoResize(this)"
+                            onkeydown="if(event.key==='Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(); }">
+                        </textarea>
+                    </div>
+                    <div class="col-auto d-flex align-items-end">
+                        <button id="send-btn" class="btn btn-primary" onclick="sendMessage()">
+                            <i class="fas fa-paper-plane"></i> Send
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% block extra_scripts %}
+<script>
+    function autoResize(textarea) {
+        textarea.style.height = "auto";
+        textarea.style.height = Math.min(Math.max(textarea.scrollHeight, 38), 200) + "px";
+    }
+
+    function sendMessage() {
+    let inputField = document.getElementById("user-input");
+    let message = inputField.value.trim();
+    if (!message) return;
+
+    let chatMessages = document.getElementById("chat-messages");
+
+    let userMessageDiv = document.createElement("div");
+    userMessageDiv.className = "d-flex justify-content-end p-2";
+
+    let userMessageText = document.createElement("div");
+    userMessageText.className = "bg-info text-white p-2 rounded-3";
+    userMessageText.style.maxWidth = "75%";
+
+    if (message.length < 10) {
+        userMessageText.style.textAlign = "right";
+        userMessageText.style.minWidth = "10%";
+    }
+
+    userMessageText.style.wordWrap = "break-word";
+    userMessageText.style.whiteSpace = "pre-wrap";  
+    userMessageText.textContent = message;  
+
+    userMessageDiv.appendChild(userMessageText);
+    chatMessages.appendChild(userMessageDiv);
+
+    // Add loading animation
+    let loadingDiv = document.createElement("div");
+    loadingDiv.className = "d-flex justify-content-start p-2 text-dark";
+    loadingDiv.innerHTML = `
+        <div class="bg-light p-2 rounded-3 loading-animation">
+            <span class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></span>
+            <span> Generating...</span>
+        </div>`;
+    chatMessages.appendChild(loadingDiv);
+
+    inputField.value = "";
+    inputField.style.height = "38px"; 
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    fetch("/ask/", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": "{{ csrf_token }}"
+        },
+        body: JSON.stringify({ query: message })
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Remove loading animation
+        loadingDiv.remove();
+
+        // Display response
+        let botMessageDiv = document.createElement("div");
+        botMessageDiv.className = "d-flex justify-content-start p-2 text-dark";
+
+        let botMessageText = document.createElement("div");
+        botMessageText.className = "bg-light p-2 rounded-3";
+        botMessageText.style.maxWidth = "75%";
+        botMessageText.style.wordWrap = "break-word";
+        botMessageText.style.whiteSpace = "pre-wrap";  
+
+        let formattedText = data.response
+            .replace(/\*\*(.*?)\*\*/g, "<b>$1</b>") 
+            .replace(/\n/g, "<br>")                 
+            .replace(/\* (.*?)/g, "• $1");   
+
+        botMessageText.innerHTML = formattedText;    
+
+        botMessageDiv.appendChild(botMessageText);
+        chatMessages.appendChild(botMessageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    })
+    .catch(error => {
+        console.error("Error:", error);
+        loadingDiv.innerHTML = `<div class="text-danger">Failed to load response. Please try again.</div>`;
+    });
+}
+
+</script>
+{% endblock %}
+{% endblock %}
