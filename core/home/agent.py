@@ -156,7 +156,7 @@ class GiminiClient:
             return f"API request failed: {e}"
         
 
-API_KEY = "AIzaSyDSmCWzo2dJ-4ksvUzjsz2y5OnaI9BBeds"
+API_KEY = "your_api_key"
 
 client = GiminiClient(API_KEY)
 

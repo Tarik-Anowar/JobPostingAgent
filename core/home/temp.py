@@ -134,7 +134,7 @@ class GeminiClient:
 def interact_with_agent(query):
     response = client.generate_content(query)
     return response
-API_KEY = "AIzaSyDSmCWzo2dJ-4ksvUzjsz2y5OnaI9BBeds"
+API_KEY = "your_api_key"
 
 # Example usage
 collector = JobPostCollector()
