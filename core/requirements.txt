@@ -1,0 +1,16 @@
+django
+request
+
+langchain
+langchain-google-genai
+google-generativeai
+openai
+tiktoken
+
+transformers
+torch
+accelerate
+
+langchain-huggingface
+
+
